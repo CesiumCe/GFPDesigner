@@ -41,15 +41,15 @@ def generate_stress_test_plot(
         return ""
 
     # Extract data
-    all_brightness = [c.get('brightness', c.get('predicted_brightness', 0)) for c in candidates]
-    all_stability = [c.get('stability', c.get('predicted_stability', 0.5)) for c in candidates]
+    all_brightness = [c.get('predicted_brightness', c.get('brightness', 0)) for c in candidates]
+    all_stability = [c.get('predicted_stability', c.get('stability', 0.5)) for c in candidates]
     all_agg = [c.get('aggregation_risk', 0) for c in candidates]
 
     # Composite stability = stability * (1 - aggregation_risk)
     all_comp_stability = [s * (1 - a) for s, a in zip(all_stability, all_agg)]
 
-    top6_brightness = [c.get('brightness', c.get('predicted_brightness', 0)) for c in top6]
-    top6_stability = [c.get('stability', c.get('predicted_stability', 0.5)) for c in top6]
+    top6_brightness = [c.get('predicted_brightness', c.get('brightness', 0)) for c in top6]
+    top6_stability = [c.get('predicted_stability', c.get('stability', 0.5)) for c in top6]
     top6_agg = [c.get('aggregation_risk', 0) for c in top6]
     top6_comp_stability = [s * (1 - a) for s, a in zip(top6_stability, top6_agg)]
 
@@ -177,8 +177,8 @@ def generate_stress_report(
     ]
 
     if top6:
-        all_b = [c.get('brightness', c.get('predicted_brightness', 0)) for c in top6]
-        all_s = [c.get('stability', c.get('predicted_stability', 0.5)) for c in top6]
+        all_b = [c.get('predicted_brightness', c.get('brightness', 0)) for c in top6]
+        all_s = [c.get('predicted_stability', c.get('stability', 0.5)) for c in top6]
         all_agg = [c.get('aggregation_risk', 0) for c in top6]
 
         lines.append(f"  Top-6 brightness range: [{min(all_b):.4f}, {max(all_b):.4f}]")
