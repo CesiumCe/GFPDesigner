@@ -19,8 +19,3 @@ Thumbs.db
 
 # Large model files (download via setup_models.py)
 ESMFold/pytorch_model.bin
-
-# Others
-DESIGN_DOC.pdf
-DESIGN_DOC.md
-submission.csv
