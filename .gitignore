@@ -1,0 +1,26 @@
+# Build outputs — not tracked
+output/*
+!output/.gitkeep
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large model files (download via setup_models.py)
+ESMFold/pytorch_model.bin
+
+# Others
+DESIGN_DOC.pdf
+DESIGN_DOC.md
+submission.csv

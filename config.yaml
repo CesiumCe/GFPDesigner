@@ -1,0 +1,138 @@
+# ============================================================
+#  GFP Designer v4.4 — 全局配置文件
+# ============================================================
+#  运行: python main.py --config config.yaml
+#  所有相对路径均相对于本文件所在目录 (GFP_Designer/)
+# ============================================================
+
+# ── 数据文件路径 ──
+data:
+  template_seqs:     "data/AAseqs of 5 GFP proteins_20260511.txt"
+  brightness_data:   "data/GFP_data.xlsx"
+  exclusion_list:    "data/Exclusion_List.csv"
+  submission_template: "data/submission_template.csv"
+
+# ── 序列基本约束 ──
+sequence:
+  min_length: 220          # 竞赛规则: 220-250 aa
+  max_length: 250
+  start_aa: "M"            # 必须以甲硫氨酸开头
+  n_submissions: 6         # 最终提交序列数
+
+# ── v4.2 双骨架生成策略 ──
+# 2026 赛季基准为 sfGFP, 训练数据以 avGFP 为主 (51,715 条)。
+# 双骨架并行: sfGFP 对齐竞赛基准, avGFP 利用数据量优势。
+generation:
+  templates: ["sfGFP", "avGFP"]       # 使用的模板列表
+  n_variants_per_template: 1000       # 每个模板生成数量 (总计 2000)
+
+  # ── sfGFP 骨架参数 ──
+  # sfGFP 已有 6 个核心折叠增强突变, 额外突变需克制。
+  sfGFP:
+    extra_mutations_min: 1            # 最少额外突变数
+    extra_mutations_max: 3            # 最多额外突变数
+    tgp_flips: [2, 3]                 # 表面 K/R→D/E 翻转次数范围 (目标 net=+10)
+    mutation_distribution:            # 后备值 — 运行时由 data_distillation_scorer 从 Top5% 实时计算
+
+  # ── avGFP 骨架参数 ──
+  # avGFP 折叠不如 sfGFP, 需更多突变弥补缺陷。
+  avGFP:
+    extra_mutations_min: 2
+    extra_mutations_max: 4
+    tgp_flips: [2, 3]
+    mutation_distribution:            # 后备值 — 运行时从数据蒸馏实时计算
+
+  # ── 数据蒸馏引导 ──
+  distillation:
+    top_percentile: 5.0               # 从 Top 5% 高亮度序列提取规则
+    high_gain_positions: 60            # 保留的高增益位点数
+    strategy_weights:                  # 生成策略配比
+      distilled: 0.65                 # 位点增益+AA偏好引导
+      golden_pair: 0.20              # 高增益位点对组合
+      conservative: 0.15             # 保守替换探索
+
+  # ── C 端去聚集工程 (TGP 论文启发) ──
+  c_terminal:
+    modify_fraction: 0.33             # 33% 变体修改 C 端
+    target_positions: [219, 220, 221, 223, 224, 225]
+    substitutions: {219: E, 220: Q, 221: E, 223: D, 224: E, 225: E}
+
+# ── GPU / 设备配置 ──
+device:
+  use_gpu: true                       # 自动检测 CUDA, 不可用则回退 CPU
+  cpu_threads: 8
+
+# ── ESM-2 蛋白质语言模型 ──
+esm:
+  model_name: "esm2_t30_150M_UR50D"  # 主模型 (640d 嵌入, ~150M 参数)
+  fallback_model: "esm2_t12_35M_UR50D"  # 回退模型
+  max_train_samples: 3000            # 已弃用 (XGBoost 使用 50000 样本)
+  batch_size: 8                      # CPU 批大小; GPU 可设 16-32
+  zero_shot_top_n: 500               # ESM 零样本评分覆盖 Top-N 序列
+
+# ── XGBoost 亮度预测器 ──
+xgboost:
+  n_ensemble: 3                       # 集成模型数 (用于 UQ)
+  max_train_samples: 50000            # 训练样本上限
+  validation_split: 0.15              # 验证集比例
+  n_estimators: 200                   # 每模型树的数量
+  max_depth: 7
+  learning_rate: 0.05
+  subsample: 0.75                     # 行采样 (集成多样性)
+  colsample_bytree: 0.75              # 列采样
+  random_state: 42
+
+# ── 评分与筛选 ──
+scoring:
+  brightness_cutoff: 0.3              # 竞赛 30% WT 淘汰线
+  brightness_floor: 0.60              # v4.4: 乘积制硬底线 (B_pct ∈ [0.60, 1.00])
+  wt_brightness_reference: 3.72       # avGFP WT 参考亮度
+  folding_score_min: 0.30             # 最低折叠评分
+  uncertainty_penalty: 0.15           # UQ 不确定惩罚系数 (0=不惩罚)
+
+# ── 热稳定性: v4.4 50/50 (100%物理驱动, ESM/PLL/ZS 全部移除) ──
+stability:
+  tgp_weight: 0.50                    # TGP 表面超充电
+  folding_weight: 0.50                # 折叠启发式 (纯物理化学)
+  tgp_soft_cap_net: 10
+  pro_refolding_penalty: 0.92
+
+# ── 知识约束 ──
+knowledge:
+  enabled: true
+  ion_pair_warning_threshold: 2
+  tgp_charge_bonus_enabled: true
+  chloride_pocket_check: true
+
+# ── GA+HC 深度搜索 (Memetic Algorithm) ──
+deep_search:
+  enabled: true
+  population_size: 300                # 种群大小
+  n_generations: 50                   # 迭代代数
+  mutation_rate: 0.40                 # 变异概率
+  elite_size: 10                      # 精英保留数
+  hill_climb_prob: 0.50               # 子代爬山精炼概率
+  n_seeds: 300                        # 传入的种子序列数
+
+# ── 筛选与提交 ──
+selection:
+  diversity_threshold: 0.95           # 序列一致性上限
+  portfolio_diversify: true           # 策略组合分散
+  sfGFP_priority: true                # sfGFP 优先 (Top-1 规则)
+  avGFP_threshold_ratio: 0.85         # avGFP 综合分需 ≥ sfGFP 中位数 85%
+
+# ── ESMFold 3D 结构终验 ──
+esmfold:
+  enabled: true
+  model_dir: "ESMFold"
+  device: "auto"                      # auto: GPU(≥10GB) → CPU 回退
+  plddt_threshold: 0.80               # pLDDT ≥ 80% × WT
+  ptm_threshold: 0.75                 # pTM ≥ 75% × WT
+  chromophore_drop_max: 0.30          # 生色团 pLDDT 下降上限
+  max_attempts: 30                    # 最多尝试验证的候选数
+
+# ── 输出 ──
+output:
+  team_name: "CesiumCe"
+  csv_path: "output/submission.csv"
+  agent_logs: true

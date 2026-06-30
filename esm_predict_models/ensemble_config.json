@@ -1,0 +1,7 @@
+{
+  "esm_weight": 0.6,
+  "lightgbm_weight": 0.4,
+  "description": "最终预测 = 0.6 × ESM微调均值 + 0.4 × LightGBM",
+  "esm_model": "ESM2-T6-8M-UR50D (3 layers frozen, 3 layers fine-tuned)",
+  "lightgbm_features": "ESM-2 mean-pool (320D) + physicochemical (30D) = 350D"
+}
