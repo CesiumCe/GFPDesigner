@@ -133,6 +133,6 @@ esmfold:
 
 # ── 输出 ──
 output:
-  team_name: "CesiumCe"
+  team_name: "Team Name"
   csv_path: "output/submission.csv"
   agent_logs: true

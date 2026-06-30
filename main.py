@@ -592,7 +592,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Submission CSV
-    team_name = out_cfg.get('team_name', 'CesiumCe')
+    team_name = out_cfg.get('team_name', 'Default')
     submission_path = write_submission(team_name, selected, str(output_dir / "submission.csv"))
     print(f"\n  Submission CSV : {submission_path}")
 
